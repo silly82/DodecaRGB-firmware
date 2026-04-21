@@ -8,7 +8,7 @@ version: 2.8.3
 
 This document provides a quick reference to the API available to authors creating custom animations by inheriting from `PixelTheater::Scene`.
 
-- For a tutorial on creating scenes, see the [Creating Animations Guide](../../docs/creating_animations.md).
+- For a tutorial on creating scenes, see the [Creating Animations Guide](../guides/creating_animations.md).
 - For details on Parameters, see the [Parameters Guide](Parameters.md).
 - For Color/Palette details, see [Color System](Color.md) and [Palettes API](Palettes.md).
 - For Model/Geometry details, see [Model System](Model.md).
@@ -101,6 +101,32 @@ Define user-controllable parameters in `setup()` or `config()`.
 *   `model().pointCount()` (`size_t`): Total number of points (usually == `ledCount()`).
 *   `model().faceCount()` (`size_t`): Total number of faces.
 *   `model().getSphereRadius()` (`float`): Returns the calculated radius of the model's bounding sphere.
+
+### Edge Connectivity Access
+
+Edge access uses face-centric methods to avoid confusion in models with multiple face types:
+
+```cpp
+// Get a face proxy for face-centric operations
+auto face_proxy = model().face(face_id);
+
+// Get connected face at a specific edge of this face
+int8_t connected_face = face_proxy.face_at_edge(edge_index);  // Returns -1 if no connection
+
+// Get number of edges for this face  
+uint8_t edge_count = face_proxy.edge_count();
+
+// Iterate through all edges of this face
+auto edges = face_proxy.edges();
+for (const auto& edge : edges) {
+    if (edge.has_connection()) {
+        int8_t adjacent_face = edge.connected_face_id;
+        // Process edge connection...
+    }
+}
+```
+
+Note: Each edge connects exactly one face to another (or has no connection). Face-centric design ensures predictable behavior in models with multiple face types.
 
 ## Core Utility Methods (Base Class Members)
 
