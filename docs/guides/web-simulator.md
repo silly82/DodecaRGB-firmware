@@ -2,7 +2,7 @@
 
 The DodecaRGB Web Simulator provides a browser-based visualization and testing environment for LED animations using WebGL and WebAssembly. This guide explains the architecture, design patterns, and implementation details to help developers understand and modify the codebase.
 
-![web sim](../images/web-simulator.png:600x)
+![web sim](../../images/web-simulator.png)
 
 ## Architecture Overview
 
@@ -14,11 +14,28 @@ The web simulator uses a hybrid architecture:
 
 This architecture allows sharing code between the firmware and simulator, ensuring animations behave consistently across platforms.
 
+## Building the Simulator
+
+### Prerequisites
+
+- Emscripten SDK (3.1.0+)
+- Build system (Make)
+
+### Build Commands
+
+```bash
+# Build the simulator
+./build_web.sh
+
+# Start development server
+python -m http.server -d web
+```
+
 ## Code Organization
 
 ### C++ Components
 
-- **[`src/web_simulator.cpp`](../src/web_simulator.cpp)**: Main C++ entry point for the simulator
+- **[`src/web_simulator.cpp`](../../src/web_simulator.cpp)**: Main C++ entry point for the simulator
   - Contains the `WebSimulator` class that manages scene execution and parameter handling
   - Implements C functions exposed via `EMSCRIPTEN_KEEPALIVE` for JavaScript interoperability (e.g., `get_scene_parameters_json`, `update_scene_parameter_string`)
   - Parameter data is primarily exchanged with JavaScript using JSON strings.
@@ -227,23 +244,6 @@ For more information on scene implementation, see the [Scenes documentation](../
 - **Memory Management**: Proper cleanup of resources when switching scenes
 - **FPS Control**: Monitoring and logging of frame rate
 - **Floating-Point Precision**: Careful handling of decimal values to maintain animation quality
-
-## Building the Simulator
-
-### Prerequisites
-
-- Emscripten SDK (3.1.0+)
-- Build system (Make)
-
-### Build Commands
-
-```bash
-# Build the simulator
-./build_web.sh
-
-# Start development server
-python -m http.server -d web
-```
 
 ## Build Process & Troubleshooting
 

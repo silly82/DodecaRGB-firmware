@@ -9,9 +9,6 @@ if __name__ == "__main__":
 from util.matrix3d import Matrix3D
 
 # Constants shared between Python and C++
-LEDS_PER_SIDE = 104
-NUM_SIDES = 12
-NUM_LEDS = NUM_SIDES * LEDS_PER_SIDE
 MAX_LED_NEIGHBORS = 7
 
 # Constants from Processing
@@ -24,18 +21,19 @@ scale = 5.15    # LED position scaling factor
 
 # Side rotation configuration - each number represents the number of times the pentagon PCB
 # is rotated relative to the starting position, in 72 degree increments.
+# NOTE: This array is now deprecated - use the rotation parameter in transform functions instead
 side_rotation = [
     0,  # side 0 (bottom)
-    3,  # side 1
-    4,  # side 2
-    4,  # side 3
-    4,  # side 4
-    4,  # side 5
-    2,  # side 6
-    2,  # side 7
-    2,  # side 8
-    2,  # side 9
-    2,  # side 10
+    0,  # side 1
+    0,  # side 2
+    0,  # side 3
+    0,  # side 4
+    0,  # side 5
+    0,  # side 6
+    0,  # side 7
+    0,  # side 8
+    0,  # side 9
+    0,  # side 10
     0   # side 11 (top)
 ]
 
@@ -55,8 +53,15 @@ FACE_COLORS = [
     (0.0, 0.5, 1.0),  # Sky Blue
 ]
 
-def transform_led_point(x: float, y: float, num: int, sideNumber: int):
-    """Transform LED point exactly like Processing's buildLedsFromComponentPlacementCSV()"""
+def transform_led_point(x: float, y: float, num: int, sideNumber: int, rotation: int = 0):
+    """Transform LED point exactly like Processing's buildLedsFromComponentPlacementCSV()
+    
+    Args:
+        x, y: LED coordinates from PCB file
+        num: LED number (0-based)
+        sideNumber: Face number (0-11) - should be geometric ID for proper positioning
+        rotation: Face rotation in 72-degree increments (0-4) from YAML config
+    """
     m = Matrix3D()
     
     # Initial transform
@@ -84,19 +89,27 @@ def transform_led_point(x: float, y: float, num: int, sideNumber: int):
     else:
         m.rotate_z(-zv)
     
-    # Side rotation
-    m.rotate_z(ro * side_rotation[sideNumber])
+    # Side rotation - now uses the rotation parameter from YAML config
+    m.rotate_z(ro * rotation)
     
     # LED-specific transforms
-    m.rotate_z(math.pi/10)
+    m.rotate_z(-math.pi/10)
     
     # Final transform - negate Y and Z to match Processing's coordinate system
     result = m.apply([x, y, 0])
     return [result[0], -result[1], -result[2]]
 
 def strip_units(value_str):
-    """Strip units (mm) from coordinate strings"""
-    return float(value_str.replace('mm', ''))
+    """Strip units (mm or mil) from coordinate strings and convert to mm"""
+    value_str = value_str.strip()
+    if value_str.endswith('mil'):
+        # Convert mil to mm (1000 mil = 25.4 mm)
+        return float(value_str.replace('mil', '')) * 25.4 / 1000.0
+    elif value_str.endswith('mm'):
+        return float(value_str.replace('mm', ''))
+    else:
+        # Try to parse as number (assume mm if no units)
+        return float(value_str)
 
 def stripit(s):
     """Strip whitespace and quotes"""
@@ -109,10 +122,38 @@ def load_pcb_points(filename):
     print(f"Loading PCB points from: {filename}")
     if not os.path.exists(filename):
         raise FileNotFoundError(f"PCB file not found at: {filename}")
-        
-    with open(filename, 'r') as f:
+    
+    # Detect encoding by reading first few bytes
+    encoding = 'utf-8'
+    units_detected = 'mm'
+    
+    with open(filename, 'rb') as f:
+        first_bytes = f.read(4)
+        if first_bytes.startswith(b'\xff\xfe'):
+            encoding = 'utf-16-le'
+            print(f"  Detected UTF-16 Little Endian encoding")
+        elif first_bytes.startswith(b'\xfe\xff'):
+            encoding = 'utf-16-be'
+            print(f"  Detected UTF-16 Big Endian encoding")
+        else:
+            print(f"  Using UTF-8 encoding")
+    
+    # Read and detect units
+    with open(filename, 'r', encoding=encoding) as f:
+        content = f.read()
+        if 'mil' in content.lower():
+            units_detected = 'mil'
+            print(f"  Detected mil units - will convert to mm (1000mil = 25.4mm)")
+        else:
+            print(f"  Detected mm units")
+    
+    # Now parse the file properly
+    with open(filename, 'r', encoding=encoding) as f:
         # Parse header
         header = next(f).strip()
+        # Remove BOM character if present (common in UTF-16 files)
+        if header.startswith('\ufeff'):
+            header = header[1:]
         header_fields = [stripit(f) for f in header.split('\t')]
         
         # Find column indices
@@ -132,8 +173,8 @@ def load_pcb_points(filename):
                     y = strip_units(fields[y_idx])
                     
                     # Apply offsets BEFORE scaling
-                    x += 0.2
-                    y -= 55.884
+                    x += 0
+                    y -= 0
                     
                     # Apply scaling AFTER offsets
                     x *= scale

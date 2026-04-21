@@ -1,6 +1,9 @@
 # Change Log
 
-0.3 - Apr 20
+0.2.2 - Jun 14
+- support for new PCBs
+
+0.2.1 - Apr 20
 - ported remaining scenes
 - introduced SceneKit, simplifying access to API and reducing namespace prefixes
 - added sphere radius calculation to model generation, available in scenes
@@ -105,7 +108,7 @@ v2.0 Dec 8 2024:
 
 ## Version 1 of the project
 
-For more info see the [Version 1 README](../Dodeca-V1-info.md).
+For more info see the [Version 1 README](docs/guides/Dodeca-V1-info.md).
 
 v1.0 Aug 2023:
 
